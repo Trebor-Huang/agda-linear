@@ -64,20 +64,30 @@ data _ʻ_⊨ₚₛ# : ∀ {Σ t} {ps : Patterns t} -> StrictContext Σ -> $̸ₚ
 
 data _⊨_ where
     _⟦_⟧⁺ : ∀ {Σ} {Γ : StrictContext Σ} { A : 𝕋 + } {p : Pattern (○ A)}
+        -- A positive canonical value is a pattern
+        -- whose variables are substituted with other canonical forms.
         -> (p̃ : $̸ p) -> Γ ⊨ₚ p̃ -> Γ ⊨ :- ○ A
     _⟦_⟧⁻ : ∀ {Σ} {Γ : StrictContext Σ} { A : 𝕋 - } {p : Pattern (● A)}
+        -- Dual. Negative canonical continuations.
         -> (p̃ : $̸ p) -> Γ ⊨ₚ p̃ -> Γ ⊨ :- ● A
     case⁺ : ∀ {Σ} {Γ : StrictContext Σ} { A : 𝕋 + } {ps : Patterns (○ A)}
+        -- A positive continuation is specified
+        -- by case analyzing every possible introduction pattern
+        -- of the corresponding value that it can take, and
+        -- giving an expression (a program) for each case.
         -> (p̃s : $̸ₚₛ ps) -> Γ ʻ p̃s ⊨ₚₛ# -> Covers (○ A) ps -> Γ ⊨ :- ● A
     case⁻ : ∀ {Σ} {Γ : StrictContext Σ} { A : 𝕋 - } {ps : Patterns (● A)}
+        -- Dual.
         -> (p̃s : $̸ₚₛ ps) -> Γ ʻ p̃s ⊨ₚₛ# -> Covers (● A) ps -> Γ ⊨ :- ○ A
     _·⁺_ : ∀ {Σ} {Γ Γ' : StrictContext Σ} { A : 𝕋 + }
-        -> Γ ⊨ :- ○ A -> (v : Σ ∋̂ ● A)
-        -> {Γ ⊎̂ (■̂∋ v) ≅̂ Γ'} -> Γ' ⊨ #
+        -- To create expressions, apply a value to a continuation.
+        -> (v : Σ ∋̂ ● A) -> Γ ⊨ :- ○ A
+        -> ((■̂∋ v) ⊎̂ Γ ≅̂ Γ') -> Γ' ⊨ #
     _·⁻_ : ∀ {Σ} {Γ Γ' : StrictContext Σ} { A : 𝕋 - }
         -> Γ ⊨ :- ● A -> (v : Σ ∋̂ ○ A)
-        -> {Γ ⊎̂ (■̂∋ v) ≅̂ Γ'} -> Γ' ⊨ #
+        -> (Γ ⊎̂ (■̂∋ v) ≅̂ Γ') -> Γ' ⊨ #
 
+-- The rest are just boring.
 data _⊨̅_ where
     ⊨ε : ∀ Σ -> (□̂ Σ) ⊨̅ ε̂ₛ
     ⊨∷ : ∀ {Σ Σ'} {Γ₁ Γ₂ Γ₃ : StrictContext Σ'} {t} {p : Pattern t} {α : $̸ p}
@@ -87,21 +97,21 @@ data _⊨ₚ_ where
     ⊨⟨_,_⟩ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
         {A⁺ B⁺} {p : Pattern (○ A⁺)} {q : Pattern (○ B⁺)} {α : $̸ p} {β : $̸ q}
         -> Γ₁ ⊨ₚ α -> Γ₂ ⊨ₚ β -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> Γ₃ ⊨ₚ $̸⟨ α , β ⟩
-    ⊨ϖ₁ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
+    ⊨ϖ₁ : ∀ {Σ} {Γ : StrictContext Σ}
         {A⁺ B⁺} {p : Pattern (○ A⁺)} {α : $̸ p}
-        -> Γ₁ ⊨ₚ α -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> Γ₃ ⊨ₚ $̸ϖ₁ {B⁺ = B⁺} α
-    ⊨ϖ₂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
+        -> Γ ⊨ₚ α -> Γ ⊨ₚ $̸ϖ₁ {B⁺ = B⁺} α
+    ⊨ϖ₂ : ∀ {Σ} {Γ : StrictContext Σ}
         {A⁺ B⁺} {p : Pattern (○ B⁺)} {α : $̸ p}
-        -> Γ₁ ⊨ₚ α -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> Γ₃ ⊨ₚ $̸ϖ₂ {A⁺ = A⁺} α
+        -> Γ ⊨ₚ α -> Γ ⊨ₚ $̸ϖ₂ {A⁺ = A⁺} α
     ⊨⟪_,_⟫ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
         {A⁻ B⁻} {p : Pattern (● A⁻)} {q : Pattern (● B⁻)} {α : $̸ p} {β : $̸ q}
         -> Γ₁ ⊨ₚ α -> Γ₂ ⊨ₚ β -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> Γ₃ ⊨ₚ $̸⟪ α , β ⟫
-    ⊨π₁ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
+    ⊨π₁ : ∀ {Σ} {Γ : StrictContext Σ}
         {A⁻ B⁻} {p : Pattern (● A⁻)} {α : $̸ p}
-        -> Γ₁ ⊨ₚ α -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> Γ₃ ⊨ₚ $̸π₁ {B⁻ = B⁻} α
-    ⊨π₂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
+        -> Γ ⊨ₚ α -> Γ ⊨ₚ $̸π₁ {B⁻ = B⁻} α
+    ⊨π₂ : ∀ {Σ} {Γ : StrictContext Σ}
         {A⁻ B⁻} {p : Pattern (● B⁻)} {α : $̸ p}
-        -> Γ₁ ⊨ₚ α -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> Γ₃ ⊨ₚ $̸π₂ {A⁻ = A⁻} α
+        -> Γ ⊨ₚ α -> Γ ⊨ₚ $̸π₂ {A⁻ = A⁻} α
     ⊨*̂ : ∀ {Σ} -> □̂ Σ ⊨ₚ $̸*̂
     ⊨*̬ : ∀ {Σ} -> □̂ Σ ⊨ₚ $̸*̬
     ⊨⇑ : ∀ {Σ} {A⁺} -> (α̅ : Σ ∋̂ (● A⁺)) -> ■̂∋ α̅ ⊨ₚ $̸⇑ {A⁺}
