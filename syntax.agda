@@ -1,5 +1,6 @@
 -- An abandoned effort
 -- This is subsumed by the other modules
+-- Therefore I am justified to not leave any more explanation here
 
 module Syntax where
 

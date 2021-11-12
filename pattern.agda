@@ -2,6 +2,20 @@ module Pattern where
 
 open import Types
 
+-- What defines a type is the patterns.
+-- Positive types are defined by patterns that constructs its values.
+-- Negative types are defined by patterns that specifies its continuation.
+
+-- Patterns do not contain binding-related information.
+-- For instance, ⟨ $ , ϖ₁ $ ⟩ is what we usually write as (in Haskell)
+-- ( x, Left y ). we use $ as placeholders for pattern variables.
+-- This makes a lot of operations on binding structures easier.
+-- I will write a separate article on this.
+
+-- A subtlety: The last five patterns are all placeholders for variables.
+-- However, apart from $, the other four are 'atomic' variables
+-- that we allow. $ signifies 'shallow' pattern matching.
+
 data Pattern : T -> Set where
     ⟨_,_⟩ : ∀ {A⁺ B⁺} -> Pattern (○ A⁺) -> Pattern (○ B⁺) -> Pattern (○ A⁺ ⊗ B⁺)
     ϖ₁ : ∀ {A⁺ B⁺} -> Pattern (○ A⁺) -> Pattern (○ A⁺ ⊕ B⁺)
@@ -18,7 +32,11 @@ data Pattern : T -> Set where
     $ : ∀ t -> Pattern t
 
 infix 6 _∋ₚ_
+-- We turn to define de Bruijn indices.
+-- Note that it is not just unary numbers, but a structured type.
+-- This is because the patterns have structures, and we want to respect them.
 
+-- This is just a zipper on Patterns.
 data _∋ₚ_ : ∀ {A} -> Pattern A -> T -> Set where
     ⟨_,~⟩ : ∀ {A⁺ B⁺ t} {p : Pattern (○ A⁺)} {q : Pattern (○ B⁺)} -> p ∋ₚ t -> ⟨ p , q ⟩ ∋ₚ t
     ⟨~,_⟩ : ∀ {A⁺ B⁺ t} {p : Pattern (○ A⁺)} {q : Pattern (○ B⁺)} -> q ∋ₚ t -> ⟨ p , q ⟩ ∋ₚ t
@@ -31,13 +49,15 @@ data _∋ₚ_ : ∀ {A} -> Pattern A -> T -> Set where
     ~⇑ : ∀ {A⁺} -> ⇑ A⁺ ∋ₚ ● A⁺
     ~⇓ : ∀ {A⁻} -> ⇓ A⁻ ∋ₚ ○ A⁻
     ~●⁺ : ∀ {A⁺} -> ●⁺ A⁺ ∋ₚ ● A⁺
-    ~●⁻ : ∀ {A⁻} -> ●⁻ A⁻ ∋ₚ ○ A⁻  -- Subtlety
+    ~●⁻ : ∀ {A⁻} -> ●⁻ A⁻ ∋ₚ ○ A⁻  -- Subtlety: ○ and ● are not reflected in the syntax for ∋ₚ.
     ~$ : ∀ {t} -> $ t ∋ₚ t
 
 -- We check for pattern coverage, and deepness (i.e. whether the pattern uses $)
-infix 9 _≻ₚ_
+infix 9 _≻ₚ_  -- p ≻ₚ q denotes that the pattern p is more general than q.
 
 data _≻ₚ_ : ∀ {A} -> Pattern A -> Pattern A -> Set where
+    ≻$ : ∀ {t} (p : Pattern t) -> $ t ≻ₚ p
+    -- The rest of these are boilerplate.
     ≻⟨_,_⟩ : ∀ {A⁺ B⁺} {p₁ p₂ : Pattern (○ A⁺)} {q₁ q₂ : Pattern (○ B⁺)}
         -> p₁ ≻ₚ p₂ -> q₁ ≻ₚ q₂ -> ⟨ p₁ , q₁ ⟩ ≻ₚ ⟨ p₂ , q₂ ⟩
     ≻ϖ₁ : ∀ {A⁺ B⁺} {p₁ p₂ : Pattern (○ A⁺)}
@@ -56,9 +76,10 @@ data _≻ₚ_ : ∀ {A} -> Pattern A -> Pattern A -> Set where
     ≻●⁻ : ∀ {A⁻} -> ●⁻ A⁻ ≻ₚ ●⁻ A⁻
     ≻*̂ : *̂ ≻ₚ *̂
     ≻*̬ : *̬ ≻ₚ *̬
-    ≻$ : ∀ {t} (p : Pattern t) -> $ t ≻ₚ p
 
 data $̸ : ∀ {t} -> Pattern t -> Set where
+    -- No clause for $̸$ because it's not deep.
+    -- Otherwise we just recurse down the pattern.
     $̸⟨_,_⟩ : ∀ {A⁺ B⁺} {p : Pattern (○ A⁺)} {q : Pattern (○ B⁺)}
         -> $̸ p -> $̸ q -> $̸ ⟨ p , q ⟩
     $̸ϖ₁ : ∀ {A⁺ B⁺} {p : Pattern (○ A⁺)}
@@ -77,8 +98,8 @@ data $̸ : ∀ {t} -> Pattern t -> Set where
     $̸⇓ : ∀ {A⁻} -> $̸ (⇓ A⁻)
     $̸●⁺ : ∀ {A⁺} -> $̸ (●⁺ A⁺)
     $̸●⁻ : ∀ {A⁻} -> $̸ (●⁻ A⁻)
-    -- No clause for $̸$ because it's not deep
 
+-- A list of patterns with the first match semantics.
 data Patterns (t : T) : Set where
     εₚ : Patterns t
     _∷ₚ_ : Pattern t -> Patterns t -> Patterns t
@@ -86,10 +107,11 @@ data Patterns (t : T) : Set where
 infixr 6 _∷ₚ_
 infix 5 _∋ₚₛ_
 
-data Maybe (t : Set) : Set where
+data Maybe (t : Set) : Set where  -- Useful in intermediate computation.
     Just : t -> Maybe t
     Nothing : Maybe t
 
+-- Defined so that we can use idiom brackets in Agda.
 pure : ∀ {t} -> t -> Maybe t
 pure = Just
 
@@ -97,11 +119,14 @@ _<*>_ : ∀ {t₁ t₂} (f : Maybe (t₁ -> t₂)) -> Maybe t₁ -> Maybe t₂
 (Just f) <*> (Just x) = Just (f x)
 _ <*> _ = Nothing
 
+-- ps ∋ₚₛ q means that the (deep) pattern q is covered by the list ps.
 data _∋ₚₛ_ {t} : Patterns t -> Pattern t -> Set where
     𝕫ₚₛ : ∀ {p ps q} -> $̸ q -> p ≻ₚ q -> p ∷ₚ ps ∋ₚₛ q
     𝕤ₚₛ : ∀ {p ps q} -> ps ∋ₚₛ q -> p ∷ₚ ps ∋ₚₛ q
+    -- We allow for failure and eliminate it later.
     ☹ₚₛ : ∀ {ps q} -> $̸ q -> ps ∋ₚₛ q
 
+-- Failure-free version of _∋ₚₛ_.
 data ☹̸ {t} : ∀ {ps : Patterns t} {q} -> ps ∋ₚₛ q -> Set where
     ☹̸𝕫 : ∀ {p ps q} {r : $̸ q} {s : p ≻ₚ q} -> ☹̸ (𝕫ₚₛ {p = p} {ps = ps} r s)
     ☹̸𝕤_ : ∀ {p ps q} {r : ps ∋ₚₛ q} -> ☹̸ r -> ☹̸ (𝕤ₚₛ {p = p} r)
@@ -110,7 +135,7 @@ infixr 9 ☹̸𝕤_
 
 -- The following functions define the first-match semantics.
 cover𝕫 : ∀ t (p : Pattern t) -> (∀ q -> $̸ q -> Maybe (p ≻ₚ q))
-cover𝕫 _ ($ t) q r = Just (≻$ q)
+cover𝕫 _ ($ t) q r = Just (≻$ q)  -- $ matches everything.
 cover𝕫 (○ A ⊗ B) ⟨ p₁ , p₂ ⟩ ⟨ q₁ , q₂ ⟩ $̸⟨ r₁ , r₂ ⟩
     with cover𝕫 (○ A) p₁ q₁ r₁ | cover𝕫 (○ B) p₂ q₂ r₂
 ... | Just c₁ | Just c₂ = Just ≻⟨ c₁ , c₂ ⟩
@@ -164,7 +189,7 @@ record Covers (t : T) (ps : Patterns t) : Set where
 
 -- Test out the notorious "majority" function pattern
 -- The pattern is complete, but you cannot find a natural split variable.
--- The function in Agda.
+-- The function as written in Agda syntax:
 maj : Bool -> Bool -> Bool -> Bool
 maj True False x = x
 maj False x True = x
@@ -195,10 +220,7 @@ majCovers : Covers (○ 𝟚 ⊗ 𝟚 ⊗ 𝟚) majₚₛ
 majCovers = ☺ proof
     where
         proof : _  -- A proof that maj covers every case.
-        -- Note that we case split on the second argument,
-        -- so that $'s never get into the syntax.
-        -- (Which would have been so if we split on the first, try it!)
-        -- Also, Agda succeeded to infer a lot of things, so
+        -- Agda succeeded to infer a lot of things, so
         -- we just have to point out which clause covers which case
         proof _ $̸⟨ $̸𝕗 , $̸𝕗 , $̸𝕗 ⟩ = ☹̸𝕤 ☹̸𝕤 ☹̸𝕤 ☹̸𝕫
         proof _ $̸⟨ $̸𝕥 , $̸𝕗 , $̸𝕗 ⟩ = ☹̸𝕤 ☹̸𝕫
@@ -208,6 +230,19 @@ majCovers = ☺ proof
         proof _ $̸⟨ $̸𝕥 , $̸𝕗 , $̸𝕥 ⟩ = ☹̸𝕤 ☹̸𝕤 ☹̸𝕫
         proof _ $̸⟨ $̸𝕗 , $̸𝕥 , $̸𝕥 ⟩ = ☹̸𝕫
         proof _ $̸⟨ $̸𝕥 , $̸𝕥 , $̸𝕥 ⟩ = ☹̸𝕤 ☹̸𝕤 ☹̸𝕤 ☹̸𝕤 ☹̸𝕫
+
+-- Since we are dealing with linear type theory,
+-- We need to take care of variable use.
+-- Traditionally, the rules are presented with
+-- contexts as lists. Then we invent a 'disjoint union' ⊎ concept
+-- to state the rules e.g.
+-- Γ ⊢ t : A      Γ' ⊢ s : B
+-------------------------------
+--   Γ ⊎ Γ' ⊢ (t,s) : A × B
+-- This requires an awful lot of shifting. We take a much simpler approach:
+-- We record all the variables, but mark some of them as used. So Γ and Γ'
+-- have the same structure, except that the variable usages are marked differently.
+-- ⊎ is then just a straightforward computation.
 
 data Occur : ∀ {t} -> Pattern t -> Set where
     ⟨_,_⟩ₒ : ∀ {A⁺ B⁺} {p : Pattern (○ A⁺)} {q : Pattern (○ B⁺)}
@@ -331,14 +366,20 @@ data Exists (A : Set) (B : A -> Set) : Set where
     exists : ∀ (a : A) (b : B a) -> Exists A B
 
 -- aux functions that have awful type signatures
+-- basically just the product morphism:
+-- (f × g) (x, y) = (f(x), g(y))
+-- But we have dependent types. A mundane dependent type exercise.
 pair : ∀ {A B A' B'} -> (f : A -> A') -> (∀ {a} -> B a -> B' (f a))
     -> (Exists A B -> Exists A' B')
 pair f g (exists a b) = exists (f a) (g {a} b)
 
+-- A 2-adic version.
 pair² : ∀ {A₁ A₂ A B₁ B₂ B} -> (f : A₁ -> A₂ -> A) -> (∀ {a₁ a₂} -> B₁ a₁ -> B₂ a₂ -> B (f a₁ a₂))
     -> (Exists A₁ B₁ -> Exists A₂ B₂ -> Exists A B)
 pair² f g (exists a₁ b₁) (exists a₂ b₂) = exists (f a₁ a₂) (g b₁ b₂)
 
+-- We implement the decision procedure.
+-- It doesn't explain why it fails, but always carries a proof when it succeeds.
 _⊎_ : ∀ {t} {p : Pattern t} -> (Δ₁ Δ₂ : Occur p) -> Maybe (Exists _ \Δ -> Δ₁ ⊎ Δ₂ ≅ Δ)
 ⟨ Δ₁ , Δ₃ ⟩ₒ ⊎ ⟨ Δ₂ , Δ₄ ⟩ₒ = ⦇ (pair² ⟨_,_⟩ₒ ⊎⟨_,_⟩) (Δ₁ ⊎ Δ₂) (Δ₃ ⊎ Δ₄) ⦈
 ϖ₁ₒ Δ₁ ⊎ ϖ₁ₒ Δ₂ = ⦇ (pair ϖ₁ₒ ⊎ϖ₁) (Δ₁ ⊎ Δ₂) ⦈
