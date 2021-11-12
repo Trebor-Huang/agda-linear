@@ -10,7 +10,7 @@ open import Pattern
 -- a variable onto the context.
 
 -- Stack is a list of patterns; Context additionally records occurrences.
-infixr 6 _∷_ _∷ₛ_
+infixl 6 _∷_ _∷ₛ_
 
 data Stack : Set where
     εₛ : Stack
