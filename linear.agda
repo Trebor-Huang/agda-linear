@@ -114,10 +114,12 @@ data _⊢ₚ_ where  -- This mirrors the structure of patterns.
 
 
 data _ʻ_⊢ₚₛ_ where
-    ⊢εₚₛ : ∀ {Σ t j} -> (□̅ Σ) ʻ (εₚ {t}) ⊢ₚₛ j
-    ⊢∷ₚₛ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {t} {p : Pattern t} {ps j}
-        -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃
-        -> Γ₁ ∷ (■ p) ⊢ j -> Γ₂ ʻ ps ⊢ₚₛ j -> Γ₃ ʻ (p ∷ₚ ps) ⊢ₚₛ j
+    ⊢εₚₛ : ∀ {Σ} {Γ : Context Σ} {t j} -> Γ ʻ (εₚ {t}) ⊢ₚₛ j
+    -- Note that this trivially uses variables in Γ.
+    -- So when you pattern match on an empty type, you don't need
+    -- to care about linearity!
+    ⊢∷ₚₛ : ∀ {Σ} {Γ : Context Σ} {t} {p : Pattern t} {ps j}
+        -> Γ ∷ (■ p) ⊢ j -> Γ ʻ ps ⊢ₚₛ j -> Γ ʻ (p ∷ₚ ps) ⊢ₚₛ j
 
 -- Some sanity checks
 -- A ⊢ A
@@ -127,7 +129,7 @@ id = var (𝕫ₛ ~$)
 -- Excluded middle is provable! For negative types it's just (A ⅋ ¬ A).
 -- Note that if you used the other disjunction ⊕, it becomes unprovable.
 pem⁻ : ∀ {A} -> ε ⊢ :- ○ (A ⅋ ¬⁻ A)
-pem⁻ = case-of (⊢∷ₚₛ ⊎ε
+pem⁻ = case-of (⊢∷ₚₛ
         ((var (𝕫ₛ ⟪ ~$ ,~⟫) · var (𝕫ₛ ⟪~, ~●⁻ ⟫))
             (⊎ε ⊎∷ ⊎⟪ ⊎$L , ⊎●⁻R ⟫))
         ⊢εₚₛ)
@@ -135,3 +137,6 @@ pem⁻ = case-of (⊢∷ₚₛ ⊎ε
     where
         proof : _
         proof ⟪ _ , ●⁻ _ ⟫ $̸⟪ _ , $̸●⁻ ⟫ = ☹̸𝕫
+-- In less cluttered syntax, this is just
+-- case-of
+--      ⟪ κ, a ⟫ ↦ κ · a
