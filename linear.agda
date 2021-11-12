@@ -94,15 +94,15 @@ data _⊢̅_ where  -- Boring. We just combine judgments together.
 data _⊢ₚ_ where  -- This mirrors the structure of patterns.
     ⊢⟨_,_⟩ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁺ B⁺} {p : Pattern (○ A⁺)} {q : Pattern (○ B⁺)}
         -> Γ₁ ⊢ₚ p -> Γ₂ ⊢ₚ q -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃ -> Γ₃ ⊢ₚ ⟨ p , q ⟩
-    ⊢ϖ₁ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁺ B⁺} {p : Pattern (○ A⁺)} {q : Pattern (○ A⁺ ⊕ B⁺)}
+    ⊢ϖ₁ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁺ B⁺} {p : Pattern (○ A⁺)}
         -> Γ₁ ⊢ₚ p -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃ -> Γ₃ ⊢ₚ ϖ₁ {B⁺ = B⁺} p
-    ⊢ϖ₂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁺ B⁺} {p : Pattern (○ B⁺)} {q : Pattern (○ A⁺ ⊕ B⁺)}
+    ⊢ϖ₂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁺ B⁺} {p : Pattern (○ B⁺)}
         -> Γ₂ ⊢ₚ p -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃ -> Γ₃ ⊢ₚ ϖ₂ {A⁺ = A⁺} p
     ⊢⟪_,_⟫ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁻ B⁻} {p : Pattern (● A⁻)} {q : Pattern (● B⁻)}
         -> Γ₁ ⊢ₚ p -> Γ₂ ⊢ₚ q -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃ -> Γ₃ ⊢ₚ ⟪ p , q ⟫
-    ⊢π₁ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁻ B⁻} {p : Pattern (● A⁻)} {q : Pattern (● A⁻ & B⁻)}
+    ⊢π₁ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁻ B⁻} {p : Pattern (● A⁻)}
         -> Γ₁ ⊢ₚ p -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃ -> Γ₂ ⊢ₚ π₁ {B⁻ = B⁻} p
-    ⊢π₂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁻ B⁻} {p : Pattern (● B⁻)} {q : Pattern (● A⁻ & B⁻)}
+    ⊢π₂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : Context Σ} {A⁻ B⁻} {p : Pattern (● B⁻)}
         -> Γ₁ ⊢ₚ p -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃ -> Γ₂ ⊢ₚ π₂ {A⁻ = A⁻} p
     ⊢*̂ : ∀ {Σ} -> □̅ Σ ⊢ₚ *̂
     ⊢*̬ : ∀ {Σ} -> □̅ Σ ⊢ₚ *̬
