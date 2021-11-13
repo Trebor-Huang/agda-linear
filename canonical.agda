@@ -70,6 +70,10 @@ data _⊨_ where
     _⟦_⟧⁻ : ∀ {Σ} {Γ : StrictContext Σ} { A : 𝕋 - } {p : Pattern (● A)}
         -- Dual. Negative canonical continuations.
         -> (p̃ : $̸ p) -> Γ ⊨ₚ p̃ -> Γ ⊨ :- ● A
+    var⁺ : ∀ {Σ} { A : 𝕋 + }
+        -> (α : Σ ∋̂ ● A) -> (■̂∋ α) ⊨ :- ● A
+    var⁻ : ∀ {Σ} { A : 𝕋 - }
+        -> (α : Σ ∋̂ ○ A) -> (■̂∋ α) ⊨ :- ○ A
     case⁺ : ∀ {Σ} {Γ : StrictContext Σ} { A : 𝕋 + } {ps : Patterns (○ A)}
         -- A positive continuation is specified
         -- by case analyzing every possible introduction pattern

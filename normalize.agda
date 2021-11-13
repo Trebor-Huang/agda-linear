@@ -5,6 +5,8 @@ open import Pattern
 open import Linear
 open import Canonical
 
+-- We first implement the forgetful functors.
+
 -- We have a little bit of coherence problem that needs to be remedied.
 data _≡_ {A : Set} : A -> A -> Set where
     refl : ∀ {a} -> a ≡ a
@@ -48,6 +50,8 @@ forget⊨ₚₛ# : ∀ {Σ t} {ps : Patterns t} {α̅ : $̸ₚₛ ps} {Γ : Stri
 
 forget⊨ (p̃ ⟦ σ ⟧⁺) = cons (forget⊨ₚ σ)
 forget⊨ (p̃ ⟦ σ ⟧⁻) = cons (forget⊨ₚ σ)
+forget⊨ (var⁺ v) rewrite commute-■∋-Γ v = var (forget∋̂ v)
+forget⊨ (var⁻ v) rewrite commute-■∋-Γ v = var (forget∋̂ v)
 forget⊨ (case⁺ p̃s tₚₛ c) = case+of (forget⊨ₚₛ# tₚₛ) c
 forget⊨ (case⁻ p̃s tₚₛ c) = case-of (forget⊨ₚₛ# tₚₛ) c
 forget⊨ ((v ·⁺ t) r) = (coerced-var⁺ · forget⊨ t) (forget⊎̂ r)
@@ -80,3 +84,26 @@ forget⊨ₚ (⊨●⁻ t) = ⊢●⁻ (forget⊨ t)
 
 forget⊨ₚₛ# ⊨εₚₛ = ⊢εₚₛ
 forget⊨ₚₛ# (⊨∷ₚₛ t tₚₛ) = ⊢∷ₚₛ (forget⊨ t) (forget⊨ₚₛ# tₚₛ)
+
+-- Now we try to `quote`.
+{-
+forget⊨ : ∀ {Σ} {Γ : StrictContext Σ} {j} -> Γ ⊨ j -> (forgetΓ Γ) ⊢ j
+forget⊨̅ : ∀ {Σ Σ'} {Γ : StrictContext Σ} -> Γ ⊨̅ Σ' -> (forgetΓ Γ) ⊢̅ (forgetΣ Σ')
+forget⊨ₚ : ∀ {Σ t} {p : Pattern t} {α : $̸ p} {Γ : StrictContext Σ}
+    -> Γ ⊨ₚ α -> (forgetΓ Γ) ⊢ₚ p
+forget⊨ₚₛ# : ∀ {Σ t} {ps : Patterns t} {α̅ : $̸ₚₛ ps} {Γ : StrictContext Σ}
+    -> Γ ʻ α̅ ⊨ₚₛ# -> (forgetΓ Γ) ʻ ps ⊢ₚₛ #
+-}
+
+quote⊢ : ∀ {Σ} {Γ : StrictContext Σ} {j} -> (forgetΓ Γ) ⊢ j -> Γ ⊨ j
+quote⊢̅ : ∀ {Σ Σ'} {Γ : StrictContext Σ} -> (forgetΓ Γ) ⊢̅ (forgetΣ Σ') -> Γ ⊨̅ Σ'
+quote⊢ₚ : ∀ {Σ t} {p : Pattern t} {α : $̸ p} {Γ : StrictContext Σ}
+    -> (forgetΓ Γ) ⊢ₚ p -> Γ ⊨ₚ α
+quote⊢ₚₛ# : ∀ {Σ t} {ps : Patterns t} {α̅ : $̸ₚₛ ps} {Γ : StrictContext Σ}
+    -> (forgetΓ Γ) ʻ ps ⊢ₚₛ # -> Γ ʻ α̅ ⊨ₚₛ#
+
+quote⊢ {Γ = Γ} {j = j} t with forgetΓ Γ
+quote⊢ {Γ} {j} t | Γ' = {!   !}
+
+-- Finally, we prove that forget ∘ quote = id. This proves that normal forms are indeed normal.
+
