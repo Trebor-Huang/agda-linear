@@ -79,6 +79,7 @@ data _⊢_ where
         -- Case splitting on an arbitrary term.
         -- This demonstrates the semantics of _ʻ_⊢ₚₛ_.
         -> Γ₁ ⊢ :- t -> Γ₂ ʻ ps ⊢ₚₛ j -> Covers t ps -> Γ₁ ⊎̅ Γ₂ ≅̅ Γ₃ -> Γ₃ ⊢ j
+    cons : ∀ {Σ} {Γ : Context Σ} {t} {p : Pattern t} -> Γ ⊢ₚ p -> Γ ⊢ :- t
     _⦅_⦆ : ∀ {Σ Σ'} {Γ' : Context Σ'} {j}
         -- Composition of two judgements.
         -> (■̅ Σ) ⊢ j -> Γ' ⊢̅ Σ -> Γ' ⊢ j
@@ -106,11 +107,11 @@ data _⊢ₚ_ where  -- This mirrors the structure of patterns.
         -> Γ ⊢ₚ p -> Γ ⊢ₚ π₂ {A⁻ = A⁻} p
     ⊢*̂ : ∀ {Σ} -> □̅ Σ ⊢ₚ *̂
     ⊢*̬ : ∀ {Σ} -> □̅ Σ ⊢ₚ *̬
-    ⊢⇑ : ∀ {Σ} {A⁺} -> (α̅ : Σ ∋ (● A⁺)) -> ■∋ α̅ ⊢ₚ ⇑ A⁺
-    ⊢⇓ : ∀ {Σ} {A⁻} -> (α̅ : Σ ∋ (○ A⁻)) -> ■∋ α̅ ⊢ₚ ⇓ A⁻
-    ⊢●⁺ : ∀ {Σ} {A⁺} -> (α̅ : Σ ∋ (● A⁺)) -> ■∋ α̅ ⊢ₚ ●⁺ A⁺
-    ⊢●⁻ : ∀ {Σ} {A⁻} -> (α̅ : Σ ∋ (○ A⁻)) -> ■∋ α̅ ⊢ₚ ●⁻ A⁻
-    ⊢$ : ∀ {Σ} {t} -> (α̅ : Σ ∋ t) -> ■∋ α̅ ⊢ₚ $ t
+    ⊢⇑ : ∀ {Σ} {Γ : Context Σ} {A⁺} -> (Γ ⊢ :- (● A⁺)) -> Γ ⊢ₚ ⇑ A⁺
+    ⊢⇓ : ∀ {Σ} {Γ : Context Σ} {A⁻} -> (Γ ⊢ :- (○ A⁻)) -> Γ ⊢ₚ ⇓ A⁻
+    ⊢●⁺ : ∀ {Σ} {Γ : Context Σ} {A⁺} -> (Γ ⊢ :- (● A⁺)) -> Γ ⊢ₚ ●⁺ A⁺
+    ⊢●⁻ : ∀ {Σ} {Γ : Context Σ} {A⁻} -> (Γ ⊢ :- (○ A⁻)) -> Γ ⊢ₚ ●⁻ A⁻
+    ⊢$ : ∀ {Σ} {Γ : Context Σ} {t} -> Γ ⊢ :- t -> Γ ⊢ₚ $ t
 
 
 data _ʻ_⊢ₚₛ_ where

@@ -5,11 +5,13 @@ open import Pattern
 open import Linear
 open import Canonical
 
+-- We have a little bit of coherence problem that needs to be remedied.
 data _≡_ {A : Set} : A -> A -> Set where
     refl : ∀ {a} -> a ≡ a
 
 {-# BUILTIN EQUALITY _≡_ #-}
 
+-- First the non-mutually-recursive functions. The names should be evident
 forgetΣ : StrictStack -> Stack
 forgetΣ ε̂ₛ = εₛ
 forgetΣ (_∷̂ₛ_ {p = p} Σ _) = (forgetΣ Σ) ∷ₛ p
@@ -22,6 +24,12 @@ forget∋̂ : ∀ {Σ t} -> Σ ∋̂ t -> forgetΣ Σ ∋ t
 forget∋̂ (𝕫̂ₛ x) = 𝕫ₛ x
 forget∋̂ (𝕤̂ₛ α) = 𝕤ₛ forget∋̂ α
 
+forget⊎̂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
+    -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> forgetΓ Γ₁ ⊎̅ forgetΓ Γ₂ ≅̅ forgetΓ Γ₃
+forget⊎̂ ⊎̂ε = ⊎ε
+forget⊎̂ (u ⊎̂∷ v) = forget⊎̂ u ⊎∷ v
+
+-- Two little commutation lemmas.
 commute-□-Γ : ∀ Σ -> forgetΓ (□̂ Σ) ≡ □̅ (forgetΣ Σ)
 commute-□-Γ ε̂ₛ = refl
 commute-□-Γ (Σ ∷̂ₛ x) rewrite commute-□-Γ Σ = refl
@@ -30,17 +38,7 @@ commute-■∋-Γ : ∀ {Σ t} (v : Σ ∋̂ t) ->  forgetΓ (■̂∋ v) ≡ �
 commute-■∋-Γ {Σ = Σ ∷̂ₛ _} (𝕫̂ₛ _) rewrite commute-□-Γ Σ = refl
 commute-■∋-Γ (𝕤̂ₛ v) rewrite commute-■∋-Γ v = refl
 
-forget⊎̂ : ∀ {Σ} {Γ₁ Γ₂ Γ₃ : StrictContext Σ}
-    -> Γ₁ ⊎̂ Γ₂ ≅̂ Γ₃ -> forgetΓ Γ₁ ⊎̅ forgetΓ Γ₂ ≅̅ forgetΓ Γ₃
-forget⊎̂ ⊎̂ε = ⊎ε
-forget⊎̂ (u ⊎̂∷ v) = forget⊎̂ u ⊎∷ v
-
-{-
-data _⊨_ : ∀ {Σ} -> StrictContext Σ -> J -> Set
-data _⊨̅_ : ∀ {Σ} -> StrictContext Σ -> StrictStack -> Set
-data _⊨ₚ_ : ∀ {Σ t} {p : Pattern t} -> StrictContext Σ -> $̸ p -> Set
-data _ʻ_⊨ₚₛ# : ∀ {Σ t} {ps : Patterns t} -> StrictContext Σ -> $̸ₚₛ ps -> Set
--}
+-- Next, the four inductive definitions require mutual recursion.
 forget⊨ : ∀ {Σ} {Γ : StrictContext Σ} {j} -> Γ ⊨ j -> (forgetΓ Γ) ⊢ j
 forget⊨̅ : ∀ {Σ Σ'} {Γ : StrictContext Σ} -> Γ ⊨̅ Σ' -> (forgetΓ Γ) ⊢̅ (forgetΣ Σ')
 forget⊨ₚ : ∀ {Σ t} {p : Pattern t} {α : $̸ p} {Γ : StrictContext Σ}
@@ -48,12 +46,12 @@ forget⊨ₚ : ∀ {Σ t} {p : Pattern t} {α : $̸ p} {Γ : StrictContext Σ}
 forget⊨ₚₛ# : ∀ {Σ t} {ps : Patterns t} {α̅ : $̸ₚₛ ps} {Γ : StrictContext Σ}
     -> Γ ʻ α̅ ⊨ₚₛ# -> (forgetΓ Γ) ʻ ps ⊢ₚₛ #
 
-forget⊨ (p̃ ⟦ σ ⟧⁺) = {!   !}
-forget⊨ (p̃ ⟦ σ ⟧⁻) = {!   !}
+forget⊨ (p̃ ⟦ σ ⟧⁺) = cons (forget⊨ₚ σ)
+forget⊨ (p̃ ⟦ σ ⟧⁻) = cons (forget⊨ₚ σ)
 forget⊨ (case⁺ p̃s tₚₛ c) = case+of (forget⊨ₚₛ# tₚₛ) c
 forget⊨ (case⁻ p̃s tₚₛ c) = case-of (forget⊨ₚₛ# tₚₛ) c
 forget⊨ ((v ·⁺ t) r) = (coerced-var⁺ · forget⊨ t) (forget⊎̂ r)
-    where
+    where  -- Use `where` to make the types easier to read.
         coerced-var⁺ : forgetΓ (■̂∋ v) ⊢ :- ● _
         coerced-var⁺ rewrite commute-■∋-Γ v = var (forget∋̂ v)
 forget⊨ ((t ·⁻ v) r) = (forget⊨ t · coerced-var⁻) (forget⊎̂ r)
@@ -75,10 +73,10 @@ forget⊨ₚ (⊨π₁ tₚ) = ⊢π₁ (forget⊨ₚ tₚ)
 forget⊨ₚ (⊨π₂ tₚ) = ⊢π₂ (forget⊨ₚ tₚ)
 forget⊨ₚ {Σ = Σ} ⊨*̂ rewrite commute-□-Γ Σ = ⊢*̂
 forget⊨ₚ {Σ = Σ} ⊨*̬ rewrite commute-□-Γ Σ = ⊢*̬
-forget⊨ₚ (⊨⇑ α̅) rewrite commute-■∋-Γ α̅ = ⊢⇑ (forget∋̂ α̅)
-forget⊨ₚ (⊨⇓ α̅) rewrite commute-■∋-Γ α̅ = ⊢⇓ (forget∋̂ α̅)
-forget⊨ₚ (⊨●⁺ α̅) rewrite commute-■∋-Γ α̅ = ⊢●⁺ (forget∋̂ α̅)
-forget⊨ₚ (⊨●⁻ α̅) rewrite commute-■∋-Γ α̅ = ⊢●⁻ (forget∋̂ α̅)
+forget⊨ₚ (⊨⇑ t) = ⊢⇑ (forget⊨ t)
+forget⊨ₚ (⊨⇓ t) = ⊢⇓ (forget⊨ t)
+forget⊨ₚ (⊨●⁺ t) = ⊢●⁺ (forget⊨ t)
+forget⊨ₚ (⊨●⁻ t) = ⊢●⁻ (forget⊨ t)
 
 forget⊨ₚₛ# ⊨εₚₛ = ⊢εₚₛ
 forget⊨ₚₛ# (⊨∷ₚₛ t tₚₛ) = ⊢∷ₚₛ (forget⊨ t) (forget⊨ₚₛ# tₚₛ)
