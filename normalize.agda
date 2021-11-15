@@ -92,7 +92,7 @@ private
 
     cong-cong : ∀ {ℓ₁ ℓ₂ ℓ₃} {A : Set ℓ₁} {B : Set ℓ₂} {C : Set ℓ₃}
         (f : A -> B) (g : B -> C) {x y}
-        -> (eq : x ≡ y) -> cong g (cong f eq) ≡ cong (λ z -> g (f z)) eq
+        -> (eq : x ≡ y) -> cong g (cong f eq) ≡ cong (\ z -> g (f z)) eq
     cong-cong f g r rewrite r = refl
 
     symm : ∀ {ℓ} {A : Set ℓ} {x y : A} -> x ≡ y -> y ≡ x
@@ -162,7 +162,7 @@ quote⊢ₚₛ# : ∀ {Σ t} {ps : Patterns t} {α̅ : $̸ₚₛ ps} {Γ : Stric
 
 quote⊢ {Σ} {Γ} {j} t with forgetΓ Γ in eq
 quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- ○_ { + } A⁺} (var (𝕫ₛ i)) | .(■∋ (𝕫ₛ i)) = {!   !}
-quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- ○_ { - } A⁻} (var (𝕫ₛ i)) | .(■∋ (𝕫ₛ i)) = var⁻ {!   !}  -- quote∋
+quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- ○_ { - } A⁻} (var (𝕫ₛ i)) | .(■∋ (𝕫ₛ i)) = {!   !}
 quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- (●_ {pol} t)} (var (𝕫ₛ i)) | .(■∋ (𝕫ₛ i)) = {!   !}
 quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- ty} (var (𝕤ₛ α̅)) | .(■∋ (𝕤ₛ α̅)) = {!   !}
 quote⊢ {Σ} {Γ} {#} ((t○ · t●) x) | fΓ = {!   !}
@@ -173,7 +173,6 @@ quote⊢ {Σ} {Γ} {j}
 quote⊢ {Σ} {Γ} {:- ty} (cons argsₚ) | fΓ = {!   !}
 quote⊢ {Σ} {Γ} {j} (t ⦅ argsₛ ⦆) | fΓ = {!   !}
 
-{-
 quote⊢̅ {Σ} {Σ'} {Γ} t̅ with forgetΣ Σ' in eqΣ' | forgetΓ Γ in eqΓ
 quote⊢̅ {Σ} {ε̂ₛ} {Γ} (⊢ε .(forgetΣ Σ)) | εₛ | .(□̅ (forgetΣ Σ))
     rewrite quote-□-Γ eqΓ = ⊨ε Σ
@@ -197,7 +196,7 @@ quote⊢̅ {Σ} {_∷̂ₛ_ {t = tp} {p = p} sΣ' α} {Γ} (_⊢∷_ {Γ₁ = Γ
         coerced-t : fΓ₂ ⊨ₚ α
         coerced-t rewrite eq₂ -- forgetΓ fΓ₂ ⊢ₚ p      t : forgetΓ fΓ₂ ⊢ₚ fp
             = quote⊢ₚ (transp-dependent
-                Pattern (λ t p -> forgetΓ fΓ₂ ⊢ₚ p)
+                Pattern (\ t p -> forgetΓ fΓ₂ ⊢ₚ p)
                 eqtp eqp t)
 
         coerced-x : forgetΓ fΓ₁ ⊎̅ forgetΓ fΓ₂ ≅̅ forgetΓ Γ
@@ -253,23 +252,23 @@ quote⊢ₚ {Σ} {● ⊥} {.*̬} {$̸*̬} {Γ} ⊢*̬ | .(□̅ (forgetΣ Σ))
 quote⊢ₚ {Σ} {○ ↑ A} {.(⇑ A)} {$̸⇑} {Γ} (⊢⇑ x) | _ = ⊨⇑ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ● A
-        coerced-x rewrite cong (λ Γ → Γ ⊢ :- ● A) eq = x
+        coerced-x rewrite cong (\ Γ → Γ ⊢ :- ● A) eq = x
 quote⊢ₚ {Σ} {● ↓ A} {.(⇓ A)} {$̸⇓} {Γ} (⊢⇓ x) | _ = ⊨⇓ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ○ A
-        coerced-x rewrite cong (λ Γ → Γ ⊢ :- ○ A) eq = x
+        coerced-x rewrite cong (\ Γ → Γ ⊢ :- ○ A) eq = x
 quote⊢ₚ {Σ} {○ ¬⁺ A} {.(●⁺ A)} {$̸●⁺} {Γ} (⊢●⁺ x) | _ = ⊨●⁺ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ● A
-        coerced-x rewrite cong (λ Γ → Γ ⊢ :- ● A) eq = x
+        coerced-x rewrite cong (\ Γ → Γ ⊢ :- ● A) eq = x
 quote⊢ₚ {Σ} {● ¬⁻ A} {.(●⁻ A)} {$̸●⁻} {Γ} (⊢●⁻ x) | _ = ⊨●⁻ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ○ A
-        coerced-x rewrite cong (λ Γ → Γ ⊢ :- ○ A) eq = x
+        coerced-x rewrite cong (\ Γ → Γ ⊢ :- ○ A) eq = x
 
 quote⊢ₚₛ# {_} {_} {εₚ} {$̸ε} ⊢εₚₛ = ⊨εₚₛ
 quote⊢ₚₛ# {_} {_} {_ ∷ₚ _} {$̸∷ _ _} (⊢∷ₚₛ t t#)
     = ⊨∷ₚₛ (quote⊢ t) (quote⊢ₚₛ# t#)
 
 -- Finally, we prove that forget ∘ quote = id. This proves that normal forms are indeed normal.
--- -}  
+-- -}   
