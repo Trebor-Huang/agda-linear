@@ -36,7 +36,7 @@ commute-□-Γ : ∀ Σ -> forgetΓ (□̂ Σ) ≡ □̅ (forgetΣ Σ)
 commute-□-Γ ε̂ₛ = refl
 commute-□-Γ (Σ ∷̂ₛ x) rewrite commute-□-Γ Σ = refl
 
-commute-■∋-Γ : ∀ {Σ t} (v : Σ ∋̂ t) ->  forgetΓ (■̂∋ v) ≡ ■∋ (forget∋̂ v)
+commute-■∋-Γ : ∀ {Σ t} (v : Σ ∋̂ t) -> forgetΓ (■̂∋ v) ≡ ■∋ (forget∋̂ v)
 commute-■∋-Γ {Σ = Σ ∷̂ₛ _} (𝕫̂ₛ _) rewrite commute-□-Γ Σ = refl
 commute-■∋-Γ (𝕤̂ₛ v) rewrite commute-■∋-Γ v = refl
 
@@ -86,14 +86,31 @@ forget⊨ₚₛ# ⊨εₚₛ = ⊢εₚₛ
 forget⊨ₚₛ# (⊨∷ₚₛ t tₚₛ) = ⊢∷ₚₛ (forget⊨ t) (forget⊨ₚₛ# tₚₛ)
 
 -- We now need more tools on equalities
-cong : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} (f : (a : A) -> B) {x} {y} -> x ≡ y -> f x ≡ f y
-cong f r rewrite r = refl
+private
+    cong : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} (f : A -> B) {x} {y} -> x ≡ y -> f x ≡ f y
+    cong f r rewrite r = refl  -- non-dependent, make Agda easier to infer stuff
 
-symm : ∀ {ℓ} {A : Set ℓ} {x y : A} -> x ≡ y -> y ≡ x
-symm refl = refl
+    cong-cong : ∀ {ℓ₁ ℓ₂ ℓ₃} {A : Set ℓ₁} {B : Set ℓ₂} {C : Set ℓ₃}
+        (f : A -> B) (g : B -> C) {x y}
+        -> (eq : x ≡ y) -> cong g (cong f eq) ≡ cong (λ z -> g (f z)) eq
+    cong-cong f g r rewrite r = refl
 
-transp : ∀ {ℓ} {A B : Set ℓ} -> (A ≡ B) -> A -> B
-transp refl x = x
+    symm : ∀ {ℓ} {A : Set ℓ} {x y : A} -> x ≡ y -> y ≡ x
+    symm refl = refl
+
+    transp : ∀ {ℓ} {A B : Set ℓ} -> (A ≡ B) -> A -> B
+    transp refl x = x
+
+    cong-dependent : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : A -> Set ℓ₂}
+        (f : (a : A) -> B a) {x} {y} -> (eq : x ≡ y) -> transp (cong B eq) (f x) ≡ f y
+    cong-dependent f r rewrite r = refl
+
+    transp-dependent : ∀ {ℓ₁ ℓ₂ ℓ₃} {A : Set ℓ₁} (B : A -> Set ℓ₂) (C : (a : A) -> B a -> Set ℓ₃)
+        {x y} {u v}
+        -> (eq : x ≡ y)
+        -> (eq² : transp (cong B eq) u ≡ v)
+        -> C x u -> C y v
+    transp-dependent B C refl refl c = c
 
 -- Now we try to `quote`.
 quoteΓ : ∀ {Σ} -> (fΓ : Context (forgetΣ Σ))
@@ -103,11 +120,26 @@ quoteΓ {Σ ∷̂ₛ p} (fΓ ∷ α) with quoteΓ {Σ} fΓ
 ... | exists fΓ' eq = exists (fΓ' ∷̂ α) (cong (\fΓ -> fΓ ∷ α) eq)
 
 private
+    sl : Stack -> Stack
+    sl (Σ ∷ₛ p) = Σ
+    sl εₛ = εₛ
+
+    spt : Stack -> T
+    spt εₛ = ○ 𝟙
+    spt (_∷ₛ_ {t = t} _ _) = t
+
+    sp : (Σ : Stack) -> Pattern (spt Σ)
+    sp εₛ = $ _
+    sp (Σ ∷ₛ p) = p
+
     pl : ∀ {Σ t} {p : Pattern t} -> Context (Σ ∷ₛ p) -> Context Σ
     pl (Γ ∷ _) = Γ
 
     pr : ∀ {Σ t} {p : Pattern t} -> Context (Σ ∷ₛ p) -> Occur p
     pr (_ ∷ p) = p
+
+    pt : ∀ {Σ t} {p : Pattern t} -> Context (Σ ∷ₛ p) -> T
+    pt {t = t} _ = t
 
 quote-□-Γ : ∀ {Σ} {Γ : StrictContext Σ} -> (forgetΓ Γ ≡ □̅ (forgetΣ Σ)) -> Γ ≡ □̂ Σ
 quote-□-Γ {ε̂ₛ} {ε̂} refl = refl
@@ -130,9 +162,34 @@ quote⊢ₚₛ# : ∀ {Σ t} {ps : Patterns t} {α̅ : $̸ₚₛ ps} {Γ : Stric
 
 quote⊢ {Γ} {j} t = {!  !}
 
-quote⊢̅ {Σ} {Σ'} {Γ} t̅ with forgetΣ Σ' | forgetΓ Γ
-quote⊢̅ {Σ} {Σ'} {Γ} (⊢ε .(forgetΣ Σ)) | εₛ | .(□̅ (forgetΣ Σ)) = {!   !}
-quote⊢̅ {Σ} {Σ'} {Γ} ((t̅ ⊢∷ x) x₁) | .(_ ∷ₛ _) | Γf = {!   !}
+quote⊢̅ {Σ} {Σ'} {Γ} t̅ with forgetΣ Σ' in eqΣ' | forgetΓ Γ in eqΓ
+quote⊢̅ {Σ} {ε̂ₛ} {Γ} (⊢ε .(forgetΣ Σ)) | εₛ | .(□̅ (forgetΣ Σ))
+    rewrite quote-□-Γ eqΓ = ⊨ε Σ
+quote⊢̅ {Σ} {_∷̂ₛ_ {t = tp} {p = p} sΣ' α} {Γ} (_⊢∷_ {Γ₁ = Γ₁} {Γ₂ = Γ₂} t̅ t x)
+    | _∷ₛ_ {t = ftp} fsΣ' fp | _ with quoteΓ Γ₁ | quoteΓ Γ₂
+... | exists fΓ₁ eq₁ | exists fΓ₂ eq₂ = ⊨∷ coerced-t̅ coerced-t (quote⊎̅ coerced-x)
+    where
+        eqsΣ' : forgetΣ sΣ' ≡ fsΣ'
+        eqsΣ' = cong sl eqΣ'
+
+        eqtp : ftp ≡ tp
+        eqtp = cong spt (symm eqΣ')
+
+        eqp : transp (cong Pattern eqtp) fp ≡ p
+        eqp rewrite cong-cong spt Pattern (symm eqΣ')
+            = cong-dependent sp (symm eqΣ')
+
+        coerced-t̅ : fΓ₁ ⊨̅ sΣ'
+        coerced-t̅ rewrite eq₁ rewrite (symm eqsΣ') = quote⊢̅ t̅
+
+        coerced-t : fΓ₂ ⊨ₚ α
+        coerced-t rewrite eq₂ -- forgetΓ fΓ₂ ⊢ₚ p      t : forgetΓ fΓ₂ ⊢ₚ fp
+            = quote⊢ₚ (transp-dependent
+                Pattern (λ t p -> forgetΓ fΓ₂ ⊢ₚ p)
+                eqtp eqp t)
+
+        coerced-x : forgetΓ fΓ₁ ⊎̅ forgetΓ fΓ₂ ≅̅ forgetΓ Γ
+        coerced-x rewrite eq₁ rewrite eq₂ rewrite eqΓ = x
 
 quote⊢ₚ {Σ} {t} {p} {α} {Γ} tₚ with forgetΓ Γ in eq
 quote⊢ₚ {Σ} {○ A ⊗ B} {⟨ p , q ⟩} {$̸⟨ α , β ⟩} {Γ} (⊢⟨_,_⟩ {Γ₁ = Γ₁} {Γ₂ = Γ₂} tₚ sₚ x) | _
@@ -181,25 +238,25 @@ quote⊢ₚ {Σ} {○ 𝟙} {.*̂} {$̸*̂} {Γ} ⊢*̂ | .(□̅ (forgetΣ Σ))
     rewrite quote-□-Γ {Γ = Γ} eq = ⊨*̂
 quote⊢ₚ {Σ} {● ⊥} {.*̬} {$̸*̬} {Γ} ⊢*̬ | .(□̅ (forgetΣ Σ))
     rewrite quote-□-Γ {Γ = Γ} eq = ⊨*̬
-quote⊢ₚ {Σ} {○ ↑ A} {.(⇑ _)} {$̸⇑} {Γ} (⊢⇑ x) | Γf = ⊨⇑ (quote⊢ coerced-x)
+quote⊢ₚ {Σ} {○ ↑ A} {.(⇑ A)} {$̸⇑} {Γ} (⊢⇑ x) | _ = ⊨⇑ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ● A
         coerced-x rewrite cong (λ Γ → Γ ⊢ :- ● A) eq = x
-quote⊢ₚ {Σ} {● ↓ A} {.(⇓ A)} {$̸⇓} {Γ} (⊢⇓ x) | Γf = ⊨⇓ (quote⊢ coerced-x)
+quote⊢ₚ {Σ} {● ↓ A} {.(⇓ A)} {$̸⇓} {Γ} (⊢⇓ x) | _ = ⊨⇓ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ○ A
         coerced-x rewrite cong (λ Γ → Γ ⊢ :- ○ A) eq = x
-quote⊢ₚ {Σ} {○ ¬⁺ A} {.(●⁺ A)} {$̸●⁺} {Γ} (⊢●⁺ x) | Γf = ⊨●⁺ (quote⊢ coerced-x)
+quote⊢ₚ {Σ} {○ ¬⁺ A} {.(●⁺ A)} {$̸●⁺} {Γ} (⊢●⁺ x) | _ = ⊨●⁺ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ● A
         coerced-x rewrite cong (λ Γ → Γ ⊢ :- ● A) eq = x
-quote⊢ₚ {Σ} {● ¬⁻ A} {.(●⁻ A)} {$̸●⁻} {Γ} (⊢●⁻ x) | Γf = ⊨●⁻ (quote⊢ coerced-x)
+quote⊢ₚ {Σ} {● ¬⁻ A} {.(●⁻ A)} {$̸●⁻} {Γ} (⊢●⁻ x) | _ = ⊨●⁻ (quote⊢ coerced-x)
     where
         coerced-x : forgetΓ Γ ⊢ :- ○ A
         coerced-x rewrite cong (λ Γ → Γ ⊢ :- ○ A) eq = x
 
-quote⊢ₚₛ# {_} {_} {.εₚ} {$̸ε} ⊢εₚₛ = ⊨εₚₛ
-quote⊢ₚₛ# {_} {_} {.(_ ∷ₚ _)} {$̸∷ _ _} (⊢∷ₚₛ t t#)
+quote⊢ₚₛ# {_} {_} {εₚ} {$̸ε} ⊢εₚₛ = ⊨εₚₛ
+quote⊢ₚₛ# {_} {_} {_ ∷ₚ _} {$̸∷ _ _} (⊢∷ₚₛ t t#)
     = ⊨∷ₚₛ (quote⊢ t) (quote⊢ₚₛ# t#)
 
 -- Finally, we prove that forget ∘ quote = id. This proves that normal forms are indeed normal.
