@@ -160,8 +160,20 @@ quote⊢ₚ : ∀ {Σ t} {p : Pattern t} {α : $̸ p} {Γ : StrictContext Σ}
 quote⊢ₚₛ# : ∀ {Σ t} {ps : Patterns t} {α̅ : $̸ₚₛ ps} {Γ : StrictContext Σ}
     -> (forgetΓ Γ) ʻ ps ⊢ₚₛ # -> Γ ʻ α̅ ⊨ₚₛ#
 
-quote⊢ {Γ} {j} t = {!  !}
+quote⊢ {Σ} {Γ} {j} t with forgetΓ Γ in eq
+quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- ○_ { + } A⁺} (var (𝕫ₛ i)) | .(■∋ (𝕫ₛ i)) = {!   !}
+quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- ○_ { - } A⁻} (var (𝕫ₛ i)) | .(■∋ (𝕫ₛ i)) = var⁻ {!   !}  -- quote∋
+quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- (●_ {pol} t)} (var (𝕫ₛ i)) | .(■∋ (𝕫ₛ i)) = {!   !}
+quote⊢ {Σ ∷̂ₛ $̸p} {Γ ∷̂ α} {:- ty} (var (𝕤ₛ α̅)) | .(■∋ (𝕤ₛ α̅)) = {!   !}
+quote⊢ {Σ} {Γ} {#} ((t○ · t●) x) | fΓ = {!   !}
+quote⊢ {Σ} {Γ} {:- ● A⁺} (case+of a cls) | fΓ = {!   !}
+quote⊢ {Σ} {Γ} {:- ○ A⁻} (case-of κ cls) | fΓ = {!   !}
+quote⊢ {Σ} {Γ} {j}
+    (case_of {Γ₁ = Γ₁} t e coverage linearity) | fΓ = {!   !}
+quote⊢ {Σ} {Γ} {:- ty} (cons argsₚ) | fΓ = {!   !}
+quote⊢ {Σ} {Γ} {j} (t ⦅ argsₛ ⦆) | fΓ = {!   !}
 
+{-
 quote⊢̅ {Σ} {Σ'} {Γ} t̅ with forgetΣ Σ' in eqΣ' | forgetΓ Γ in eqΓ
 quote⊢̅ {Σ} {ε̂ₛ} {Γ} (⊢ε .(forgetΣ Σ)) | εₛ | .(□̅ (forgetΣ Σ))
     rewrite quote-□-Γ eqΓ = ⊨ε Σ
@@ -260,4 +272,4 @@ quote⊢ₚₛ# {_} {_} {_ ∷ₚ _} {$̸∷ _ _} (⊢∷ₚₛ t t#)
     = ⊨∷ₚₛ (quote⊢ t) (quote⊢ₚₛ# t#)
 
 -- Finally, we prove that forget ∘ quote = id. This proves that normal forms are indeed normal.
--- -} 
+-- -}  
